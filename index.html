@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Calorie Scanner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- CSS STYLES --- */
+        :root {
+            --primary-color: #34C759; /* สีเขียวสดใสแบบ Health App */
+            --secondary-color: #F2F2F7;
+            --text-dark: #1C1C1E;
+            --text-light: #8E8E93;
+            --overlay-bg: rgba(0, 0, 0, 0.6);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Kanit', sans-serif;
+            background-color: #000; /* พื้นหลังดำเพื่อให้จอกล้องเด่น */
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 500px; /* จำกัดความกว้างเหมือนมือถือ */
+            height: 100%;
+            position: relative;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ส่วนกล้อง */
+        .camera-view {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            border-radius: 0 0 24px 24px;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* UI ทับบนกล้อง */
+        .header-overlay {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .header-badge {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 8px 16px;
+            border-radius: 20px;
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        /* กรอบโฟกัสกลางจอ */
+        .focus-frame {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 250px;
+            height: 250px;
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 20px;
+            pointer-events: none;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.3); /* Darken area outside */
+        }
+
+        .focus-frame::after {
+            content: 'วางอาหารในกรอบ';
+            position: absolute;
+            bottom: -30px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            font-size: 0.85rem;
+        }
+
+        /* ส่วนควบคุมด้านล่าง */
+        .controls-area {
+            height: 140px;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .shutter-btn {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: transparent;
+            border: 4px solid #fff;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-bottom: 10px;
+        }
+
+        .shutter-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px; height: 60px;
+            background: #fff;
+            border-radius: 50%;
+        }
+
+        .shutter-btn:active {
+            transform: scale(0.9);
+            opacity: 0.8;
+        }
+
+        /* เครดิตตามที่ขอ */
+        .credit-text {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.3); /* สีเทาจางๆ */
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+
+        /* หน้าต่างผลลัพธ์ (Slide Up) */
+        .result-modal {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: #fff;
+            border-radius: 24px 24px 0 0;
+            padding: 24px;
+            box-sizing: border-box;
+            transform: translateY(110%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 50;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
+        }
+
+        .result-modal.active {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .food-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin: 0;
+        }
+
+        .close-btn {
+            background: #F2F2F7;
+            border: none;
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            color: #8E8E93;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nutrition-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .nutri-card {
+            background: #F9F9F9;
+            padding: 15px;
+            border-radius: 16px;
+            text-align: center;
+        }
+
+        .nutri-card.highlight {
+            background: #E8F5E9; /* Highlight แคลอรี่ */
+        }
+
+        .nutri-value {
+            display: block;
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+        
+        .nutri-card.highlight .nutri-value {
+            color: var(--primary-color);
+        }
+
+        .nutri-label {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        /* Loading Spinner */
+        .loading-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 40;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+        }
+
+        .spinner {
+            width: 40px; height: 40px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        canvas { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <div class="camera-view">
+            <video id="video" autoplay playsinline muted></video>
+            
+            <div class="header-overlay">
+                <span class="header-badge">🥗 AI Food Scan</span>
+            </div>
+            
+            <div class="focus-frame"></div>
+        </div>
+
+        <canvas id="canvas"></canvas>
+
+        <div class="controls-area">
+            <div class="shutter-btn" onclick="takePhoto()"></div>
+            <div class="credit-text">เครดิต : พว.วิษณุกรณ์ โอยา</div>
+        </div>
+
+        <div class="loading-overlay" id="loading">
+            <div class="spinner"></div>
+            <p>AI กำลังคำนวณสารอาหาร...</p>
+        </div>
+
+        <div class="result-modal" id="resultModal">
+            <div class="modal-header">
+                <div>
+                    <h2 class="food-title" id="resName">กำลังวิเคราะห์...</h2>
+                    <span style="font-size: 0.9rem; color: #8E8E93;">ปริมาณโดยประมาณ</span>
+                </div>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+
+            <div class="nutrition-grid">
+                <div class="nutri-card highlight">
+                    <span class="nutri-value" id="resCal">---</span>
+                    <span class="nutri-label">กิโลแคลอรี่</span>
+                </div>
+                <div class="nutri-card">
+                    <span class="nutri-value" id="resProt">---</span>
+                    <span class="nutri-label">โปรตีน (g)</span>
+                </div>
+                <div class="nutri-card">
+                    <span class="nutri-value" id="resCarb">---</span>
+                    <span class="nutri-label">คาร์บ (g)</span>
+                </div>
+                <div class="nutri-card">
+                    <span class="nutri-value" id="resFat">---</span>
+                    <span class="nutri-label">ไขมัน (g)</span>
+                </div>
+            </div>
+
+            <div style="font-size: 0.75rem; color: #AAA; text-align: center; margin-top: 10px;">
+                * ข้อมูลจากการประเมินด้วยภาพอาจมีความคลาดเคลื่อน
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const loading = document.getElementById('loading');
+        const resultModal = document.getElementById('resultModal');
+
+        // 1. เริ่มต้นกล้อง
+        async function initCamera() {
+            try {
+                // เลือกกล้องหลัง (environment)
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' }
+                });
+                video.srcObject = stream;
+            } catch (err) {
+                alert("ไม่สามารถเข้าถึงกล้องได้ กรุณาตรวจสอบสิทธิ์การเข้าถึง");
+                console.error(err);
+            }
+        }
+
+        // เรียกใช้ฟังก์ชันเปิดกล้อง
+        initCamera();
+
+        // 2. ฟังก์ชันถ่ายภาพและส่งให้ AI
+        async function takePhoto() {
+            // แสดง Loading
+            loading.style.display = 'flex';
+
+            // จับภาพลง Canvas
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // แปลงเป็น Base64
+            const imageBase64 = canvas.toDataURL('image/jpeg').split(',')[1];
+
+            // --- จำลองการส่งให้ AI (Mockup) ---
+            // *หมายเหตุ: หากต้องการใช้งานจริง ต้องนำ imageBase64 ส่งไปที่ Gemini API
+            await simulateAIAnalysis(); 
+
+            // ซ่อน Loading และแสดงผล
+            loading.style.display = 'none';
+            resultModal.classList.add('active');
+        }
+
+        function closeModal() {
+            resultModal.classList.remove('active');
+        }
+
+        // --- ฟังก์ชันจำลอง AI (Mockup Data) ---
+        // ตรงนี้คือส่วนที่จะแทนที่ด้วยการ Call API จริงๆ
+        function simulateAIAnalysis() {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    // สุ่มผลลัพธ์เพื่อทดสอบ
+                    const mockFoods = [
+                        { name: "ข้าวมันไก่", cal: 585, prot: 20, carb: 65, fat: 23 },
+                        { name: "ผัดไทยกุ้งสด", cal: 490, prot: 18, carb: 55, fat: 20 },
+                        { name: "สลัดอกไก่", cal: 240, prot: 25, carb: 10, fat: 5 }
+                    ];
+                    const result = mockFoods[Math.floor(Math.random() * mockFoods.length)];
+
+                    // แสดงข้อมูลลงหน้าจอ
+                    document.getElementById('resName').innerText = result.name;
+                    document.getElementById('resCal').innerText = result.cal;
+                    document.getElementById('resProt').innerText = result.prot;
+                    document.getElementById('resCarb').innerText = result.carb;
+                    document.getElementById('resFat').innerText = result.fat;
+
+                    resolve();
+                }, 2000); // หน่วงเวลา 2 วิ เหมือน AI กำลังคิด
+            });
+        }
+    </script>
+</body>
+</html>
