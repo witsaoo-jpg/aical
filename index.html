@@ -3,206 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>v2Gemini AI Image Scanner</title>
+    <title>Gemini Scanner V.3</title>
     <style>
-        body {
-            font-family: 'Sarabun', sans-serif;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f0f2f5;
-        }
-        .container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        h1 { text-align: center; color: #333; }
+        body { font-family: 'Sarabun', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f0f2f5; }
+        .container { background-color: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #2c3e50; }
+        .badge { background-color: #ff4757; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; vertical-align: middle; }
         
         .input-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
         
-        input[type="text"], 
-        input[type="file"], 
-        textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-sizing: border-box;
-            margin-top: 5px;
-        }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        select { background-color: #fff; }
 
-        button {
-            width: 100%;
-            background-color: #007bff;
-            color: white;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-top: 10px;
-        }
+        button { width: 100%; background-color: #007bff; color: white; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; margin-top: 10px; font-weight: bold; }
         button:hover { background-color: #0056b3; }
         button:disabled { background-color: #ccc; }
 
-        #preview {
-            max-width: 100%;
-            margin-top: 10px;
-            border-radius: 8px;
-            display: none;
-        }
-
-        #result {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #e9ecef;
-            border-radius: 8px;
-            white-space: pre-wrap;
-        }
-        
-        .error {
-            color: red;
-            background-color: #ffe6e6;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 10px;
-            display: none;
-        }
+        #preview { max-width: 100%; margin-top: 15px; border-radius: 8px; display: none; border: 2px dashed #ddd; }
+        #result { margin-top: 20px; padding: 20px; background-color: #e3f2fd; border-radius: 8px; white-space: pre-wrap; line-height: 1.6; display: none; }
+        .error { color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 8px; margin-top: 15px; display: none; }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
 <div class="container">
-    <h1>Gemini AI Scanner</h1>
+    <h1>Gemini Scan <span class="badge">V.3</span></h1>
 
     <div class="input-group">
-        <label>API Key ของคุณ:</label>
-        <input type="password" id="apiKey" placeholder="วาง API Key ที่นี่ (ขึ้นต้นด้วย AIza...)">
+        <label>API Key (รหัสกุญแจ):</label>
+        <input type="password" id="apiKey" placeholder="วาง API Key ที่นี่ (AIza...)">
     </div>
 
     <div class="input-group">
-        <label>เลือกรูปภาพ:</label>
+        <label>เลือกโมเดล AI:</label>
+        <select id="modelSelect">
+            <option value="gemini-1.5-flash">Gemini 1.5 Flash (แนะนำ)</option>
+            <option value="gemini-1.5-pro">Gemini 1.5 Pro (ฉลาดกว่า)</option>
+            <option value="gemini-1.5-flash-001">Gemini 1.5 Flash (สำรอง 1)</option>
+            <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash (สำรอง 2)</option>
+        </select>
+        <small style="color: #666; font-size: 12px;">*ถ้าอันแรก Error ให้ลองเลือกอันอื่นครับ</small>
+    </div>
+
+    <div class="input-group">
+        <label>รูปภาพ:</label>
         <input type="file" id="imageInput" accept="image/*">
-        <img id="preview" alt="Image Preview">
+        <img id="preview" alt="ตัวอย่างรูป">
     </div>
 
     <div class="input-group">
-        <label>คำสั่ง (Prompt):</label>
-        <textarea id="prompt" rows="3">วิเคราะห์รูปนี้ให้หน่อย ว่าคืออะไร</textarea>
+        <label>คำสั่ง:</label>
+        <textarea id="prompt" rows="3">ช่วยดูรูปนี้แล้วบอกหน่อยว่าคืออะไร และมีรายละเอียดอะไรบ้าง</textarea>
     </div>
 
-    <button id="generateBtn">ส่งให้ AI วิเคราะห์</button>
+    <button id="generateBtn">🚀 เริ่มวิเคราะห์</button>
 
     <div id="errorBox" class="error"></div>
-    <div id="result">ผลลัพธ์จะแสดงที่นี่...</div>
+    <div id="result"></div>
 </div>
 
 <script type="module">
-    // Import Google Generative AI library จาก CDN
     import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
-    const imageInput = document.getElementById('imageInput');
-    const preview = document.getElementById('preview');
-    const generateBtn = document.getElementById('generateBtn');
-    const resultDiv = document.getElementById('result');
-    const errorBox = document.getElementById('errorBox');
-    const apiKeyInput = document.getElementById('apiKey');
+    const elements = {
+        imageInput: document.getElementById('imageInput'),
+        preview: document.getElementById('preview'),
+        generateBtn: document.getElementById('generateBtn'),
+        result: document.getElementById('result'),
+        errorBox: document.getElementById('errorBox'),
+        apiKey: document.getElementById('apiKey'),
+        modelSelect: document.getElementById('modelSelect'),
+        prompt: document.getElementById('prompt')
+    };
 
-    // แสดงตัวอย่างรูปภาพเมื่อเลือกไฟล์
-    imageInput.addEventListener('change', () => {
-        const file = imageInput.files[0];
+    // จำ API Key ไว้ในเครื่อง จะได้ไม่ต้องกรอกบ่อยๆ
+    if(localStorage.getItem('gemini_api_key')) {
+        elements.apiKey.value = localStorage.getItem('gemini_api_key');
+    }
+
+    elements.apiKey.addEventListener('change', () => {
+        localStorage.setItem('gemini_api_key', elements.apiKey.value);
+    });
+
+    elements.imageInput.addEventListener('change', () => {
+        const file = elements.imageInput.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = (e) => {
-                preview.src = e.target.result;
-                preview.style.display = 'block';
+                elements.preview.src = e.target.result;
+                elements.preview.style.display = 'block';
             };
             reader.readAsDataURL(file);
         }
     });
 
-    // ฟังก์ชันแปลง File เป็น GenerativePart (Base64)
     async function fileToGenerativePart(file) {
         return new Promise((resolve) => {
             const reader = new FileReader();
             reader.onloadend = () => resolve({
-                inlineData: {
-                    data: reader.result.split(',')[1],
-                    mimeType: file.type
-                }
+                inlineData: { data: reader.result.split(',')[1], mimeType: file.type }
             });
             reader.readAsDataURL(file);
         });
     }
 
-    generateBtn.addEventListener('click', async () => {
-        const apiKey = apiKeyInput.value.trim();
-        const prompt = document.getElementById('prompt').value;
-        const file = imageInput.files[0];
+    elements.generateBtn.addEventListener('click', async () => {
+        const apiKey = elements.apiKey.value.trim();
+        const promptText = elements.prompt.value;
+        const file = elements.imageInput.files[0];
+        const selectedModel = elements.modelSelect.value; // รับค่าโมเดลจากที่เลือก
 
-        // เคลียร์ Error เดิม
-        errorBox.style.display = 'none';
-        errorBox.innerText = '';
-        resultDiv.innerText = 'กำลังวิเคราะห์... กรุณารอสักครู่';
-        generateBtn.disabled = true;
+        // Reset UI
+        elements.errorBox.style.display = 'none';
+        elements.result.style.display = 'block';
+        elements.result.innerText = 'กำลังประมวลผล... (อาจใช้เวลา 5-10 วินาที)';
+        elements.generateBtn.disabled = true;
 
         if (!apiKey) {
-            showError("กรุณาใส่ API Key ก่อนครับ");
+            showError("❌ กรุณากรอก API Key ก่อนครับ");
             return;
         }
 
         try {
-            // 1. ตั้งค่า API
             const genAI = new GoogleGenerativeAI(apiKey);
+            
+            // ใช้ชื่อโมเดลตามที่ user เลือกจากเมนู
+            const model = genAI.getGenerativeModel({ model: selectedModel });
 
-            // 2. เลือกโมเดล (ใช้ gemini-1.5-flash เป็นมาตรฐาน)
-            // *สำคัญ* ตรงนี้ต้องไม่มีคำว่า models/ นำหน้า
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-            // 3. เตรียมข้อมูลรูปภาพ (ถ้ามี)
-            let imagePart = null;
-            if (file) {
-                imagePart = await fileToGenerativePart(file);
-            }
-
-            // 4. ส่งข้อมูลไปประมวลผล
             let result;
-            if (imagePart) {
-                // ถ้ามีรูป ใช้ model.generateContent([prompt, imagePart])
-                result = await model.generateContent([prompt, imagePart]);
+            if (file) {
+                const imagePart = await fileToGenerativePart(file);
+                result = await model.generateContent([promptText, imagePart]);
             } else {
-                // ถ้ามีแต่ข้อความ
-                result = await model.generateContent(prompt);
+                result = await model.generateContent(promptText);
             }
 
-            // 5. แสดงผลลัพธ์
             const response = await result.response;
             const text = response.text();
-            resultDiv.innerText = text;
+            
+            elements.result.innerHTML = `<strong>✅ ผลลัพธ์ (${selectedModel}):</strong><br><br>${text}`;
 
         } catch (error) {
             console.error(error);
-            // แสดง Error ที่อ่านง่ายขึ้น
-            let errorMsg = error.toString();
-            if (errorMsg.includes("404")) {
-                errorMsg = "Error 404: ไม่พบโมเดล หรือ API Key ผิดพลาด (ตรวจสอบชื่อโมเดลและ API Key)";
-            } else if (errorMsg.includes("400")) {
-                errorMsg = "Error 400: คำสั่งไม่ถูกต้อง (อาจเป็นเพราะรูปภาพใหญ่เกินไป หรือ format ไม่รองรับ)";
+            let msg = error.toString();
+            if (msg.includes("404") || msg.includes("not found")) {
+                msg = `❌ ไม่พบโมเดล "${selectedModel}" \n👉 คำแนะนำ: ลองเปลี่ยนตัวเลือก "โมเดล AI" ด้านบนเป็นตัวอื่น แล้วกดปุ่มอีกครั้งครับ`;
+            } else if (msg.includes("API key")) {
+                msg = "❌ API Key ไม่ถูกต้อง หรือสิทธิ์ไม่ผ่าน";
             }
-            showError(errorMsg);
+            showError(msg);
         } finally {
-            generateBtn.disabled = false;
+            elements.generateBtn.disabled = false;
         }
     });
 
     function showError(msg) {
-        errorBox.style.display = 'block';
-        errorBox.innerText = msg;
-        resultDiv.innerText = '';
-        generateBtn.disabled = false;
+        elements.errorBox.style.display = 'block';
+        elements.errorBox.innerText = msg;
+        elements.result.style.display = 'none';
+        elements.generateBtn.disabled = false;
     }
 </script>
 
