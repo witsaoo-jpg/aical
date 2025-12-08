@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemini AI Image Scanner</title>
+    <title>v2Gemini AI Image Scanner</title>
     <style>
         body {
             font-family: 'Sarabun', sans-serif;
@@ -160,7 +160,7 @@
 
             // 2. เลือกโมเดล (ใช้ gemini-1.5-flash เป็นมาตรฐาน)
             // *สำคัญ* ตรงนี้ต้องไม่มีคำว่า models/ นำหน้า
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
             // 3. เตรียมข้อมูลรูปภาพ (ถ้ามี)
             let imagePart = null;
